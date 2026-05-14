@@ -1,38 +1,38 @@
-# Mitra Abadi — Sistem Informasi Distribusi Tekstil
+# Mitra Abadi — Textile Distribution Information System
 
-Aplikasi web untuk manajemen dan katalog produk kain distribusi **Mitra Abadi**. Dibangun dengan Laravel (REST API) dan React + Vite sebagai antarmuka pengguna.
+A web application for product catalog management and textile distribution at **Mitra Abadi**. Built with Laravel (REST API) and React + Vite as the user interface.
 
 ---
 
-## Struktur Proyek
+## Project Structure
 
 ```
 mitra-abadi/
 ├── mitra-abadi-backend/    # REST API — Laravel 11
-└── mitra-abadi-frontend/   # Antarmuka pengguna — React + Vite
+└── mitra-abadi-frontend/   # User interface — React + Vite
 ```
 
 ---
 
-## Fitur
+## Features
 
-### Halaman Publik (User)
-- **Katalog Kain** — browsing produk dengan filter kategori dan palet warna
-- **Detail Produk** — spesifikasi lengkap, varian warna, range harga
-- **Chatbot AI** — asisten virtual berbasis Gemini AI yang menjawab pertanyaan seputar produk
-- **Halaman Tentang** — profil perusahaan
+### Public Pages (User)
+- **Fabric Catalog** — browse products with category filter and color palette
+- **Product Detail** — full specifications, color variants, price range
+- **AI Chatbot** — virtual assistant powered by Gemini AI to answer product-related questions
+- **About Page** — company profile
 
-### Panel Admin
-- **Dashboard** — statistik penjualan, stok menipis, dan grafik transaksi
-- **Manajemen Inventori** — tambah, edit, hapus produk beserta varian warna dan gambar
-- **Manajemen Kategori** — kelola kategori material kain
-- **Riwayat Transaksi** — pencatatan pesanan masuk
+### Admin Panel
+- **Dashboard** — sales statistics, low-stock alerts, and transaction charts
+- **Inventory Management** — add, edit, delete products along with color variants and images
+- **Category Management** — manage fabric material categories
+- **Transaction History** — incoming order records
 
 ---
 
 ## Tech Stack
 
-| Bagian | Teknologi |
+| Layer | Technology |
 |---|---|
 | Backend | Laravel 11, PHP 8.2 |
 | Database | MySQL |
@@ -44,12 +44,12 @@ mitra-abadi/
 
 ---
 
-## Cara Menjalankan
+## Getting Started
 
-### Prasyarat
+### Prerequisites
 - PHP 8.2+, Composer
 - Node.js 18+, NPM
-- MySQL (Laragon / XAMPP / lokal)
+- MySQL (Laragon / XAMPP / local)
 
 ---
 
@@ -61,14 +61,14 @@ cd mitra-abadi-backend
 # Install dependencies
 composer install
 
-# Salin file environment
+# Copy environment file
 cp .env.example .env
 
 # Generate app key
 php artisan key:generate
 ```
 
-Edit file `.env`, sesuaikan konfigurasi database dan API key:
+Edit the `.env` file with your database credentials and API key:
 
 ```env
 DB_CONNECTION=mysql
@@ -83,19 +83,19 @@ WHATSAPP_ADMIN_NUMBER=628123456789
 ```
 
 ```bash
-# Buat database, jalankan migrasi dan seeder
+# Create database, run migrations and seeders
 php artisan migrate --seed
 
-# Buat symbolic link untuk storage
+# Create symbolic link for storage
 php artisan storage:link
 
-# Jalankan server
+# Start server
 php artisan serve
 ```
 
-API akan berjalan di `http://localhost:8000`
+API will be available at `http://localhost:8000`
 
-> **Akun admin default:**
+> **Default admin account:**
 > Email: `admin@mitraabadi.com` | Password: `password`
 
 ---
@@ -108,11 +108,11 @@ cd mitra-abadi-frontend
 # Install dependencies
 npm install
 
-# Salin file environment
+# Copy environment file
 cp .env.example .env
 ```
 
-Isi file `.env`:
+Fill in the `.env` file:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000
@@ -120,32 +120,32 @@ VITE_WHATSAPP_ADMIN_NUMBER=628123456789
 ```
 
 ```bash
-# Jalankan development server
+# Start development server
 npm run dev
 ```
 
-Aplikasi akan berjalan di `http://localhost:5173`
+App will be available at `http://localhost:5173`
 
 ---
 
-## Endpoint API Utama
+## Main API Endpoints
 
-| Method | Endpoint | Keterangan |
+| Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/products` | Daftar semua produk aktif |
-| `GET` | `/api/products/{id}` | Detail produk |
-| `GET` | `/api/categories` | Daftar kategori |
-| `POST` | `/api/chatbot/session` | Mulai sesi chatbot |
-| `POST` | `/api/chatbot/message` | Kirim pesan ke chatbot |
-| `POST` | `/api/auth/login` | Login admin |
-| `GET` | `/api/admin/dashboard` | Data dashboard (auth) |
-| `GET` | `/api/admin/products` | Manajemen produk (auth) |
-| `GET` | `/api/admin/inventories` | Data inventori (auth) |
+| `GET` | `/api/products` | List all active products |
+| `GET` | `/api/products/{id}` | Product detail |
+| `GET` | `/api/categories` | List categories |
+| `POST` | `/api/chatbot/session` | Start chatbot session |
+| `POST` | `/api/chatbot/message` | Send message to chatbot |
+| `POST` | `/api/auth/login` | Admin login |
+| `GET` | `/api/admin/dashboard` | Dashboard data (auth) |
+| `GET` | `/api/admin/products` | Product management (auth) |
+| `GET` | `/api/admin/inventories` | Inventory data (auth) |
 
-Koleksi Postman tersedia di `mitra-abadi-backend/Mitra_Abadi_Postman_Collection.json`
+Postman collection available at `mitra-abadi-backend/Mitra_Abadi_Postman_Collection.json`
 
 ---
 
-## Lisensi
+## License
 
-Proyek ini dibuat untuk keperluan akademik — Mata Kuliah Computing Project, Semester 6.
+This project was created for academic purposes — Computing Project course, Semester 6.

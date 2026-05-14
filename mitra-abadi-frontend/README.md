@@ -1,100 +1,116 @@
-# Mitra Abadi Web
+# Mitra Abadi — Frontend
 
-Frontend web katalog dan admin panel untuk arsip tekstil Mitra Abadi.
+React + Vite frontend for the Mitra Abadi textile distribution platform. Includes a public-facing product catalog and a protected admin panel, both connected to the Laravel REST API backend.
 
-Project ini dibangun dengan React + Vite, memakai Tailwind CSS v4, dan routing client-side lewat React Router.
+## Project Summary
 
-## Ringkasan Project
-
-- **Public/User side**: katalog kain, filter kategori/warna, detail produk, halaman tentang kami.
-- **Admin side**: dashboard, inventaris, manajemen kategori, input manual order, dan form specimen entry.
-- **Data source saat ini**: masih memakai data statis (dummy) di frontend, belum terhubung backend/database.
-- **Autentikasi admin saat ini**: validasi login hardcoded (untuk kebutuhan prototyping).
+- **Public / User side** — fabric catalog with category filter, color palette, product detail, about page, and AI chatbot
+- **Admin side** — dashboard, inventory management, category management, manual order entry, and specimen entry form
+- **Data source** — all data fetched from the Laravel backend API via Axios
+- **Admin authentication** — token-based login via Laravel Sanctum
 
 ## Tech Stack
 
-- React `19`
-- Vite `8`
-- React Router DOM `7`
-- Tailwind CSS `4`
-- ESLint `10`
+- React `18`
+- Vite
+- React Router DOM `6`
+- Tailwind CSS
+- Axios
+- react-markdown
 
-## Prasyarat
+## Prerequisites
 
-- Node.js `18+` (disarankan Node.js LTS terbaru)
-- npm (biasanya sudah ikut instalasi Node.js)
+- Node.js `18+` (latest LTS recommended)
+- npm
 
-## Cara Menjalankan Project
+## Getting Started
 
-1. Clone repository:
-
-   ```bash
-   git clone <url-repo-kamu>
-   cd mitra_abadi
-   ```
-
-2. Install dependency:
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-3. Jalankan mode development:
+2. Set up environment:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill in `.env`:
+
+   ```env
+   VITE_API_BASE_URL=http://localhost:8000
+   VITE_WHATSAPP_ADMIN_NUMBER=628123456789
+   ```
+
+3. Start development server:
 
    ```bash
    npm run dev
    ```
 
-4. Buka URL dari terminal (umumnya `http://localhost:5173`).
+4. Open the URL shown in the terminal (usually `http://localhost:5173`).
+
+> Make sure the Laravel backend is running at `http://localhost:8000` before starting the frontend.
 
 ## Scripts
 
-- `npm run dev` -> menjalankan server development Vite.
-- `npm run build` -> build production ke folder `dist`.
-- `npm run preview` -> preview hasil build production secara lokal.
-- `npm run lint` -> menjalankan ESLint.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Vite development server |
+| `npm run build` | Production build to `dist/` folder |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint |
 
-## Daftar Route
+## Routes
 
 ### Public / User
 
-- `/` -> halaman katalog (`Catalog`)
-- `/catalog/:id` -> detail item katalog (`CatalogDetail`)
-- `/about` -> halaman tentang kami (`About`)
+| Path | Page |
+|---|---|
+| `/` | Fabric catalog (`Catalog`) |
+| `/catalog/:id` | Product detail (`CatalogDetail`) |
+| `/about` | About page (`About`) |
 
 ### Admin
 
-- `/admin/login` -> halaman login admin (`LoginAdmin`)
-- `/admin/dashboard` -> dashboard admin (`Dashboard`)
-- `/admin/inventory` -> daftar inventaris (`Inventory`)
-- `/admin/inventory/:id` -> detail spesimen (`DetailSpesimen`)
-- `/admin/inventory/:id/edit` -> edit spesimen (`EditSpesimen`)
-- `/admin/manajemen-kategori` -> daftar kategori (`ManajemenKategori`)
-- `/admin/manajemen-kategori/:id` -> detail kategori (`DetailKategori`)
-- `/admin/manual-order-entry` -> input order manual (`ManualOrderEntry`)
-- `/admin/specimen-entry` -> form tambah spesimen (`SpecimenEntry`)
+| Path | Page |
+|---|---|
+| `/admin/login` | Admin login (`LoginAdmin`) |
+| `/admin/dashboard` | Dashboard (`Dashboard`) |
+| `/admin/inventory` | Inventory list (`Inventory`) |
+| `/admin/inventory/:id` | Specimen detail (`DetailSpesimen`) |
+| `/admin/inventory/:id/edit` | Edit specimen (`EditSpesimen`) |
+| `/admin/manajemen-kategori` | Category list (`ManajemenKategori`) |
+| `/admin/manajemen-kategori/:id` | Category detail (`DetailKategori`) |
+| `/admin/manual-order-entry` | Manual order entry (`ManualOrderEntry`) |
+| `/admin/specimen-entry` | Add specimen form (`SpecimenEntry`) |
 
-## Login Default Admin
+## Default Admin Login
 
-Saat ini login admin masih memakai validasi dummy di frontend:
+| Field | Value |
+|---|---|
+| Email | `admin@mitraabadi.com` |
+| Password | `password` |
 
-- **Email**: `admin@mitraabadi.com`
-- **Password**: `admin123`
+After a successful login, the admin token is stored and the user is redirected to `/admin/dashboard`.
 
-Setelah login sukses, user diarahkan ke `/admin/dashboard`.
+## Folder Structure
 
-## Struktur Folder Utama
-
-```text
+```
 src/
+├── api/
+│   └── axios.js           # Axios instance with base URL and auth interceptors
 ├── components/
-│   ├── layout/AdminLayout.jsx
+│   ├── layout/
+│   │   └── AdminLayout.jsx
 │   ├── ChatWindow.jsx
 │   ├── FabricCard.jsx
 │   ├── NavAdmin.jsx
+│   ├── PageLoader.jsx
+│   ├── SectionLoader.jsx
 │   └── SidebarAdmin.jsx
-├── constants/
-│   └── fabrics.js
 ├── pages/
 │   ├── admin/
 │   └── user/
@@ -103,8 +119,6 @@ src/
 └── main.jsx
 ```
 
-## Catatan Penting
+---
 
-- Belum ada proteksi route admin (guard/middleware). Akses URL admin langsung masih memungkinkan tanpa sesi login real.
-- Data katalog dan admin masih statis, jadi perubahan form belum tersimpan permanen.
-- Komponen chat AI masih memanggil endpoint eksternal langsung dari client, jadi untuk production perlu arsitektur backend/proxy dan pengelolaan API key yang aman.
+© 2026 Mitra Abadi

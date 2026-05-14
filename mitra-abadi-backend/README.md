@@ -1,95 +1,135 @@
-# Mitra Abadi - Textile Archive Management System
+# Mitra Abadi — Backend (REST API)
 
-Mitra Abadi adalah platform manajemen arsip digital dan inventaris tekstil yang dirancang untuk mengelola spesimen kain, memantau stok, serta mencatat pesanan secara efisien. Proyek ini mengintegrasikan kemudahan manajemen backend Laravel dengan antarmuka frontend React yang modern dan reaktif melalui Inertia.js.
+Laravel 11 REST API powering the Mitra Abadi textile distribution platform. Handles product catalog, inventory management, order records, AI chatbot integration, and token-based admin authentication via Laravel Sanctum.
 
-## 🚀 Teknologi Utama
+## Tech Stack
 
-- **Backend**: Laravel 12 (PHP 8.2+)
-- **Frontend**: React.js dengan Inertia.js
-- **Authentikasi**: Laravel Breeze (Inertia Stack)
-- **Styling**: Tailwind CSS v4
-- **Database**: MySQL / MariaDB
-- **Icons**: Material Symbols Outlined (Google Fonts)
+- **Framework**: Laravel 11 (PHP 8.2+)
+- **Database**: MySQL
+- **Authentication**: Laravel Sanctum (token-based)
+- **AI Chatbot**: Google Gemini 3.1 Flash-Lite
+- **File Storage**: Laravel Storage (local + symbolic link)
 
-## 📋 Panduan Instalasi
+## Prerequisites
 
-Ikuti langkah-langkah berikut untuk menjalankan proyek di mesin lokal Anda:
+- PHP 8.2+
+- Composer
+- MySQL (Laragon / XAMPP / local)
+- A [Google Gemini API key](https://aistudio.google.com/apikey)
 
-### 1. Persiapan Awal
-Pastikan Anda sudah menginstal **PHP (8.2+)**, **Composer**, **Node.js (18+)**, dan server database (seperti MySQL).
+## Installation
 
-### 2. Klon Repositori
-```bash
-git clone https://github.com/username/mitra-abadi.git
-cd mitra-abadi
-```
+### 1. Install dependencies
 
-### 3. Instal Dependensi Backend (Composer)
 ```bash
 composer install
 ```
 
-### 4. Instal Dependensi Frontend (NPM)
-```bash
-npm install
-```
+### 2. Set up environment
 
-### 5. Konfigurasi Lingkungan (.env)
-Salin file `.env.example` menjadi `.env` dan sesuaikan pengaturan database Anda.
 ```bash
 cp .env.example .env
 ```
-*Buka file `.env` dan isi bagian `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` sesuai database lokal Anda.*
 
-### 6. Generate Application Key
+Open `.env` and configure your database and API key:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mitra_abadi
+DB_USERNAME=root
+DB_PASSWORD=
+
+GEMINI_API_KEY=your_gemini_api_key_here
+WHATSAPP_ADMIN_NUMBER=628123456789
+```
+
+### 3. Generate application key
+
 ```bash
 php artisan key:generate
 ```
 
-### 7. Migrasi & Seeding Database
-Jalankan perintah ini untuk membuat tabel dan mengisi data awal (termasuk akun admin dan contoh katalog produk).
+### 4. Run migrations and seeders
+
 ```bash
 php artisan migrate --seed
 ```
 
-### 8. Hubungkan Storage
-Untuk mendukung fitur upload gambar produk:
+This creates all tables and seeds initial data including the default admin account, sample categories, and products.
+
+### 5. Create storage symbolic link
+
 ```bash
 php artisan storage:link
 ```
 
-### 9. Jalankan Proyek
-Buka **dua terminal** berbeda untuk menjalankan server Laravel dan compiler Vite:
+Required for serving uploaded product images.
 
-**Terminal 1 (Laravel Server):**
+### 6. Start the server
+
 ```bash
 php artisan serve
 ```
 
-**Terminal 2 (Vite Compiler):**
-```bash
-npm run dev
-```
-
-Akses aplikasi melalui: `http://127.0.0.1:8000`
+API will be available at `http://localhost:8000`
 
 ---
 
-## 🔐 Akses Admin (Default)
+## Default Admin Account
 
-Setelah melakukan seeding, Anda dapat masuk ke Dashboard Admin menggunakan akun berikut:
-
-- **URL**: `http://127.0.0.1:8000/login`
-- **Email**: `admin@mitraabadi.com` (atau email yang diset di DatabaseSeeder)
-- **Password**: `password`
-
-## ✨ Fitur Utama
-
-- **Catalog Explorer**: Etalase produk dengan filter kategori dan pencarian dinamis.
-- **Specimen Archive**: Pendataan detail teknis kain (GSM, Komposisi, Lebar, dll).
-- **Inventory Tracking**: Monitoring stok per roll dengan notifikasi stok menipis.
-- **Manual Order Entry**: Pencatatan pesanan langsung (POS Style) untuk admin.
-- **Admin Dashboard**: Visualisasi ringkas mengenai total penjualan dan status operasional.
+| Field | Value |
+|---|---|
+| Email | `admin@mitraabadi.com` |
+| Password | `password` |
 
 ---
-© 2026 Mitra Abadi Development Team
+
+## API Endpoints
+
+### Public
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/products` | List all active products |
+| `GET` | `/api/products/{id}` | Product detail with variants |
+| `GET` | `/api/categories` | List all categories |
+| `POST` | `/api/chatbot/session` | Start a new chatbot session |
+| `POST` | `/api/chatbot/message` | Send message to AI chatbot |
+| `POST` | `/api/auth/login` | Admin login (returns Sanctum token) |
+
+### Admin (requires Bearer token)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/logout` | Logout and revoke token |
+| `GET` | `/api/admin/dashboard` | Dashboard statistics |
+| `GET` | `/api/admin/products` | List all products |
+| `POST` | `/api/admin/products` | Create new product |
+| `PUT` | `/api/admin/products/{id}` | Update product |
+| `DELETE` | `/api/admin/products/{id}` | Delete product |
+| `GET` | `/api/admin/inventories` | Inventory data |
+| `GET` | `/api/admin/categories` | Category management |
+| `POST` | `/api/admin/categories` | Create category |
+| `PUT` | `/api/admin/categories/{id}` | Update category |
+| `DELETE` | `/api/admin/categories/{id}` | Delete category |
+| `GET` | `/api/admin/orders` | Order history |
+| `POST` | `/api/admin/orders` | Record new order |
+
+A full Postman collection is available at `Mitra_Abadi_Postman_Collection.json`.
+
+---
+
+## Features
+
+- **Product Catalog** — products with multiple color variants and images, category filtering
+- **Inventory Tracking** — stock per roll, low-stock alerts
+- **AI Chatbot** — context-aware assistant using Gemini 3.1 Flash-Lite with full product knowledge base
+- **Admin Dashboard** — sales totals, transaction charts, low-stock summary
+- **Order Management** — manual order entry and transaction history
+- **Token Authentication** — Sanctum-based login for admin panel access
+
+---
+
+© 2026 Mitra Abadi
