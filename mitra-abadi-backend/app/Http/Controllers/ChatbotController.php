@@ -156,7 +156,9 @@ class ChatbotController extends Controller
                 $harga = 'Rp ' . number_format($product->price_min, 0, ',', '.') . ' per yard';
             }
 
-            $warna = $product->variants->pluck('color_name')->filter()->implode(', ');
+            $warna = $product->variants->map(function ($v) {
+                return $v->color_name ?: $v->color_hex;
+            })->filter()->implode(', ');
 
             $katalog .= ($i + 1) . ". {$product->name}\n";
             $katalog .= "   - Kategori   : " . ($product->category?->name ?? '-') . "\n";

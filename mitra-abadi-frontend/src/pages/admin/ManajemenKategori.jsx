@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import SectionLoader from "../../components/SectionLoader";
+import Swal from "sweetalert2";
 
 export default function ManajemenKategori() {
   const navigate = useNavigate();
@@ -40,13 +41,25 @@ export default function ManajemenKategori() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Hapus kategori ini?')) return;
+  const handleDelete = async (id, name) => {
+    const result = await Swal.fire({
+      title: "Hapus Kategori?",
+      text: `Kategori "${name}" akan dihapus permanen.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e61e25",
+      cancelButtonColor: "#78716c",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await api.delete(`/admin/categories/${id}`);
+      Swal.fire({ title: "Dihapus!", text: "Kategori berhasil dihapus.", icon: "success", confirmButtonColor: "#e61e25", timer: 1800, showConfirmButton: false });
       fetchCategories();
     } catch (err) {
-      alert(err.response?.data?.message ?? 'Gagal menghapus kategori.');
+      Swal.fire({ title: "Gagal", text: err.response?.data?.message ?? "Gagal menghapus kategori.", icon: "error", confirmButtonColor: "#e61e25" });
     }
   };
 
@@ -194,7 +207,7 @@ export default function ManajemenKategori() {
                     <span className="material-symbols-outlined text-lg">visibility</span>
                   </button>
                   <button
-                    onClick={() => handleDelete(cat.id)}
+                    onClick={() => handleDelete(cat.id, cat.name)}
                     className="text-primary hover:text-error transition-colors p-1"
                     title="Hapus Kategori"
                   >

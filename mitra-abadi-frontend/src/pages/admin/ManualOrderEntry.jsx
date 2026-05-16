@@ -30,7 +30,7 @@ export default function ManualOrderEntry() {
       name: product.name,
       color: variant.color_name,
       qty_roll: 1,
-      price_per_meter: parseFloat(product.price) || 0,
+      price_per_meter: parseFloat(product.price_min) || 0,
       available: variant.inventory?.stock_roll ?? 0,
     }]);
   };
@@ -226,7 +226,7 @@ export default function ManualOrderEntry() {
                           Stok: {variant?.inventory?.stock_roll ?? '-'} roll
                         </p>
                         <p className="font-body text-xs font-medium text-primary mt-1">
-                          IDR {parseFloat(product.price || 0).toLocaleString('id-ID')}/m
+                          IDR {parseFloat(product.price_min || 0).toLocaleString('id-ID')}/m
                         </p>
                         {alreadyAdded && (
                           <p className="font-body text-[10px] text-primary font-bold uppercase tracking-wider mt-1">Ditambahkan</p>

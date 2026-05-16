@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../lib/api";
 import PageLoader from "../../components/PageLoader";
+import Swal from "sweetalert2";
 
 
 function getImageUrl(imagePath) {
@@ -18,13 +19,24 @@ export default function DetailSpesimen() {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm(`Hapus produk "${product?.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+    const result = await Swal.fire({
+      title: "Hapus Produk?",
+      text: `"${product?.name}" akan dihapus permanen dan tidak dapat dikembalikan.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e61e25",
+      cancelButtonColor: "#78716c",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     try {
       await api.delete(`/admin/products/${id}`);
       navigate('/admin/inventory');
     } catch {
-      alert('Gagal menghapus produk. Coba lagi.');
+      Swal.fire({ title: "Gagal", text: "Gagal menghapus produk. Coba lagi.", icon: "error", confirmButtonColor: "#e61e25" });
       setDeleting(false);
     }
   };
