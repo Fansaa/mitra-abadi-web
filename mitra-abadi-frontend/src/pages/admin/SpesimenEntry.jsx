@@ -37,7 +37,7 @@ export default function SpecimenEntry() {
         formData.append('variants[0][stock_roll]', variant.stock_roll || 0);
         if (variant.image) formData.append('variants[0][image]', variant.image);
       }
-      await api.post('/admin/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.post('/admin/products', formData);
       navigate('/admin/inventory');
     } catch (err) {
       const errors = err.response?.data?.errors;
@@ -130,6 +130,8 @@ export default function SpecimenEntry() {
                       value={form.yard_per_roll}
                       onChange={(e) => handleChange("yard_per_roll", e.target.value)}
                       placeholder="55"
+                      min="0.01"
+                      required
                       className="w-full border-0 border-b border-outline-variant bg-transparent px-0 py-2 font-body text-on-surface focus:ring-0 focus:border-primary transition-colors placeholder:text-on-surface-variant/40"
                     />
                   </div>
@@ -235,7 +237,7 @@ export default function SpecimenEntry() {
                   Tarik &amp; Lepas foto makro di sini
                 </p>
                 <p className="font-body text-xs text-on-surface-variant max-w-[200px]">
-                  Mendukung JPG, PNG, RAW. Maksimal 50MB.
+                  Mendukung JPG, PNG. Maksimal 10MB.
                 </p>
                 {variant.image && (
                   <p className="font-body text-xs text-primary mt-2">{variant.image.name}</p>

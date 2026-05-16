@@ -35,7 +35,7 @@ class ApiProductController extends Controller
             'variants'                       => 'nullable|array',
             'variants.*.color_name'          => 'required_with:variants|string|max:255',
             'variants.*.color_hex'           => 'nullable|string|max:7',
-            'variants.*.image'               => 'nullable|image|max:4096',
+            'variants.*.image'               => 'nullable|image|max:10240',
             'variants.*.stock_roll'          => 'nullable|integer|min:0',
             'variants.*.low_stock_threshold' => 'nullable|integer|min:0',
         ]);

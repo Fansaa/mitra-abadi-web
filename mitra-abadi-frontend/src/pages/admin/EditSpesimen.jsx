@@ -56,7 +56,7 @@ export default function EditSpesimen() {
         formData.append(`variants[${i}][color_hex]`, v.color_hex ?? "");
         if (v.newImage) formData.append(`variants[${i}][image]`, v.newImage);
       });
-      await api.post(`/admin/products/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.post(`/admin/products/${id}`, formData);
       navigate(`/admin/inventory/${id}`);
     } catch (err) {
       const errors = err.response?.data?.errors;
