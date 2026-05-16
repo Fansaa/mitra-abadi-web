@@ -12,7 +12,7 @@ export default function SpecimenEntry() {
     category_id: "",
     price_min: "",
     price_max: "",
-    composition: "",   // dipakai sebagai Kode SKU
+    sku_code: "",
     yard_per_roll: "",
     description: "",
   });
@@ -96,8 +96,8 @@ export default function SpecimenEntry() {
                     </label>
                     <input
                       type="text"
-                      value={form.composition}
-                      onChange={(e) => handleChange("composition", e.target.value)}
+                      value={form.sku_code}
+                      onChange={(e) => handleChange("sku_code", e.target.value)}
                       placeholder="Mis: SKU-001-SILK"
                       className="w-full border-0 border-b border-outline-variant bg-transparent px-0 py-2 font-body text-on-surface focus:ring-0 focus:border-primary transition-colors placeholder:text-on-surface-variant/40"
                     />

@@ -223,9 +223,9 @@ export default function DetailSpesimen() {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-on-surface-variant mb-1 font-medium">Komposisi</div>
+                <div className="text-xs text-on-surface-variant mb-1 font-medium">Kode SKU</div>
                 <div className="text-base font-bold text-on-surface border-b border-outline-variant/30 pb-2">
-                  {product.composition ?? "-"}
+                  {product.sku_code ?? "-"}
                 </div>
               </div>
               <div>

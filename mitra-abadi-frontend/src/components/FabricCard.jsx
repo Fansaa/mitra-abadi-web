@@ -67,8 +67,8 @@ function FabricCard({ fabric }) {
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[9px] uppercase tracking-widest text-stone-500 font-bold">Komposisi</span>
-              <span className="text-[11px] font-bold text-stone-800">{fabric.composition || "-"}</span>
+              <span className="text-[9px] uppercase tracking-widest text-stone-500 font-bold">Kode SKU</span>
+              <span className="text-[11px] font-bold text-stone-800">{fabric.sku_code || "-"}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] uppercase tracking-widest text-stone-500 font-bold">ID Ref</span>

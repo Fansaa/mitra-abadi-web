@@ -269,7 +269,7 @@ export default function CatalogDetail() {
               {[
                 { label: "Gramasi", value: fabric.gsm ? fabric.gsm + " GSM" : "-" },
                 { label: "Lebar", value: fabric.width_cm ? fabric.width_cm + " cm" : "-" },
-                { label: "Komposisi", value: fabric.composition || "-" },
+                { label: "Kode SKU", value: fabric.sku_code || "-" },
                 { label: "Finishing", value: fabric.finish || "-" },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-white p-5">

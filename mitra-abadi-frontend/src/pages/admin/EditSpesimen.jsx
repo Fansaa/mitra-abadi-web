@@ -12,7 +12,7 @@ export default function EditSpesimen() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "", category_id: "", price_min: "", price_max: "",
-    composition: "", yard_per_roll: "", description: "",
+    sku_code: "", yard_per_roll: "", description: "",
   });
   const [variants, setVariants] = useState([]);
 
@@ -27,7 +27,7 @@ export default function EditSpesimen() {
         category_id: p.category_id ?? "",
         price_min: p.price_min ?? "",
         price_max: p.price_max ?? "",
-        composition: p.composition ?? "",
+        sku_code: p.sku_code ?? "",
         yard_per_roll: p.yard_per_roll ?? "",
         description: p.description ?? "",
       });
@@ -130,13 +130,13 @@ export default function EditSpesimen() {
                   />
                 </div>
                 <div>
-                  <label className="ledger-label">Komposisi</label>
+                  <label className="ledger-label">Kode SKU</label>
                   <input
                     type="text"
                     className="ledger-input"
-                    value={form.composition}
-                    onChange={(e) => handleChange("composition", e.target.value)}
-                    placeholder="Mis: 100% Silk"
+                    value={form.sku_code}
+                    onChange={(e) => handleChange("sku_code", e.target.value)}
+                    placeholder="Mis: SKU-001-SILK"
                   />
                 </div>
                 <div>
