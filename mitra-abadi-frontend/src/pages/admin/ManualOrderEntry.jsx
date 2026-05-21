@@ -29,9 +29,10 @@ export default function ManualOrderEntry() {
       product_variant_id: variant.id,
       name: product.name,
       color: variant.color_name || variant.color_hex,
-      qty_roll: 1,
-      price_per_meter: parseFloat(product.price_min) || 0,
-      available: variant.inventory?.stock_roll ?? 0,
+      color_hex: variant.color_hex,
+      warna: "",
+      qty_yard: 0,
+      total_price: parseFloat(product.price_min) || 0,
     }]);
   };
 
@@ -58,8 +59,9 @@ export default function ManualOrderEntry() {
         notes,
         items: items.map(it => ({
           product_variant_id: it.product_variant_id,
-          qty_roll: Number(it.qty_roll),
-          price_per_meter: Number(it.price_per_meter),
+          warna: it.warna || null,
+          qty_yard: Number(it.qty_yard) || 0,
+          total_price: Number(it.total_price),
         })),
       });
       
@@ -89,7 +91,7 @@ export default function ManualOrderEntry() {
   );
 
   const grandTotal = useMemo(() => {
-    return items.reduce((acc, it) => acc + (Number(it.qty_roll) * Number(it.price_per_meter)), 0);
+    return items.reduce((acc, it) => acc + Number(it.total_price), 0);
   }, [items]);
 
   return (
@@ -97,7 +99,7 @@ export default function ManualOrderEntry() {
       <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
       {/* ── Top Navbar / Breadcrumb ── */}
-      <div className="bg-white border-b border-stone-200 px-8 py-5 sticky top-0 z-40 shadow-sm">
+      <div className="bg-white border-b border-stone-200 px-4 md:px-8 py-5 sticky top-16 z-30 shadow-sm">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -275,21 +277,34 @@ export default function ManualOrderEntry() {
                           }`}
                         >
                           <h4 className="font-extrabold text-stone-900 text-sm truncate mb-1">{product.name}</h4>
-                          <div className="flex justify-between items-center mt-3">
+                          <div className="flex items-center gap-2 mt-3">
+                            {variant?.color_hex && (
+                              <div
+                                className="w-5 h-5 rounded-full border border-stone-200 shrink-0 shadow-sm"
+                                style={{ backgroundColor: variant.color_hex }}
+                              />
+                            )}
                             <div>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-0.5">Varian</p>
-                              <p className="text-xs font-semibold text-stone-700">{variant ? (variant.color_name || variant.color_hex) : "Kosong"}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-0.5">Stok</p>
-                              <p className="text-xs font-bold text-[#e61e25]">{variant?.inventory?.stock_roll ?? 0} Roll</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-0.5">Warna</p>
+                              <p className="text-xs font-semibold text-stone-700">
+                                {variant ? (variant.color_name || variant.color_hex || '—') : "Kosong"}
+                                {variant?.color_hex && (
+                                  <span className="text-stone-400 ml-1 font-mono">{variant.color_hex}</span>
+                                )}
+                              </p>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between">
-                            <span className="font-bold text-stone-900 text-sm">
-                              Rp {parseFloat(product.price_min || 0).toLocaleString('id-ID')}
-                            </span>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-0.5">Range Harga</p>
+                              <span className="font-bold text-stone-900 text-sm">
+                                Rp {parseFloat(product.price_min || 0).toLocaleString('id-ID')}
+                                {product.price_max && parseFloat(product.price_max) !== parseFloat(product.price_min) && (
+                                  <> – Rp {parseFloat(product.price_max).toLocaleString('id-ID')}</>
+                                )}
+                              </span>
+                            </div>
                             {alreadyAdded ? (
                               <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">Ditambahkan</span>
                             ) : !variant ? (
@@ -322,8 +337,9 @@ export default function ManualOrderEntry() {
                         <thead className="bg-stone-50 border-b border-stone-200">
                           <tr>
                             <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-5 py-4">Produk</th>
-                            <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 w-32">Qty (Roll)</th>
-                            <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 w-40">Harga / Yard</th>
+                            <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 w-36">Warna</th>
+                            <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 w-28">Qty (Yard)</th>
+                            <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 w-44">Harga Total</th>
                             <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 text-center">Aksi</th>
                           </tr>
                         </thead>
@@ -332,14 +348,29 @@ export default function ManualOrderEntry() {
                             <tr key={item.id} className="bg-white hover:bg-stone-50 transition-colors">
                               <td className="px-5 py-4">
                                 <p className="font-bold text-stone-900">{item.name}</p>
-                                <p className="text-[11px] font-semibold text-stone-500 mt-1">Warna: {item.color} | Stok: {item.available}</p>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  {item.color_hex && (
+                                    <div className="w-3 h-3 rounded-full border border-stone-200 shrink-0" style={{ backgroundColor: item.color_hex }} />
+                                  )}
+                                  <p className="text-[11px] font-semibold text-stone-500">{item.color}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <input
+                                  type="text"
+                                  value={item.warna}
+                                  onChange={e => updateItem(item.id, 'warna', e.target.value)}
+                                  placeholder="mis. Merah"
+                                  className="w-full bg-white border border-stone-200 text-stone-800 text-sm font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-[#e61e25] focus:ring-2 focus:ring-[#e61e25]/10"
+                                />
                               </td>
                               <td className="px-4 py-4">
                                 <input
                                   type="number"
-                                  min="1"
-                                  value={item.qty_roll}
-                                  onChange={e => updateItem(item.id, 'qty_roll', e.target.value)}
+                                  min="0"
+                                  step="any"
+                                  value={item.qty_yard}
+                                  onChange={e => updateItem(item.id, 'qty_yard', e.target.value)}
                                   className="w-full bg-white border border-stone-200 text-stone-800 text-sm font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-[#e61e25] focus:ring-2 focus:ring-[#e61e25]/10 text-center"
                                 />
                               </td>
@@ -347,9 +378,8 @@ export default function ManualOrderEntry() {
                                 <input
                                   type="number"
                                   min="0"
-                                  step="500"
-                                  value={item.price_per_meter}
-                                  onChange={e => updateItem(item.id, 'price_per_meter', e.target.value)}
+                                  value={item.total_price}
+                                  onChange={e => updateItem(item.id, 'total_price', e.target.value)}
                                   className="w-full bg-white border border-stone-200 text-stone-800 text-sm font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-[#e61e25] focus:ring-2 focus:ring-[#e61e25]/10 text-right"
                                 />
                               </td>
@@ -412,22 +442,24 @@ export default function ManualOrderEntry() {
                 {items.length === 0 ? (
                   <p className="text-sm text-stone-500 font-medium italic text-center py-4">Draft pesanan kosong.</p>
                 ) : (
-                  items.map(item => {
-                    const subtotal = Number(item.qty_roll) * Number(item.price_per_meter);
-                    return (
-                      <div key={item.id} className="flex justify-between items-start gap-4">
-                        <div>
-                          <span className="block text-sm font-bold text-stone-100">{item.name}</span>
-                          <span className="block text-[10px] uppercase tracking-widest text-stone-400 mt-1">
-                            {item.qty_roll} roll × Rp {Number(item.price_per_meter || 0).toLocaleString('id-ID')}
+                  items.map(item => (
+                    <div key={item.id} className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-sm font-bold text-stone-100 truncate">{item.name}</span>
+                        {item.warna && (
+                          <span className="block text-[10px] text-stone-400 mt-0.5">{item.warna}</span>
+                        )}
+                        {Number(item.qty_yard) > 0 && (
+                          <span className="block text-[10px] uppercase tracking-widest text-stone-400 mt-0.5">
+                            {item.qty_yard} yard
                           </span>
-                        </div>
-                        <span className="font-bold text-sm text-stone-100 shrink-0">
-                          Rp {subtotal.toLocaleString('id-ID')}
-                        </span>
+                        )}
                       </div>
-                    )
-                  })
+                      <span className="font-bold text-sm text-stone-100 shrink-0">
+                        Rp {Number(item.total_price || 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))
                 )}
               </div>
 

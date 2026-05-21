@@ -2,10 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import Sk from "../../components/Skeleton";
+import * as XLSX from "xlsx";
+import Swal from "sweetalert2";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // --- Helpers ---
 
-// Bangun array N hari terakhir dalam format YYYY-MM-DD
 function getLastNDays(n) {
   return Array.from({ length: n }, (_, i) => {
     const d = new Date();
@@ -14,35 +19,61 @@ function getLastNDays(n) {
   });
 }
 
-// Format label sumbu X: "1 Jan", "15 Jan", dll
 function formatAxisLabel(iso) {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
-// Hasilkan polyline points dari array nilai
-function buildPolylinePoints(values, svgW = 100, svgH = 80, padTop = 5) {
-  const maxVal = Math.max(...values, 1);
-  return values.map((v, i) => {
-    const x = values.length > 1 ? (i / (values.length - 1)) * svgW : svgW / 2;
-    const y = svgH - padTop - (v / maxVal) * (svgH - padTop - 5) + padTop;
-    return { x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2)), v };
-  });
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-stone-700 text-sm">
+      <p className="font-extrabold text-stone-300 text-[10px] uppercase tracking-widest mb-1">{label}</p>
+      <p className="font-black text-lg">{payload[0].value} <span className="text-stone-400 font-semibold text-xs">pesanan</span></p>
+    </div>
+  );
 }
 
-const STATUS_MAP = {
-  pending: { label: "Menunggu", color: "bg-amber-50 text-amber-600 border-amber-200" },
-  processing: { label: "Diproses", color: "bg-blue-50 text-blue-600 border-blue-200" },
-  completed: { label: "Selesai", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-  cancelled: { label: "Dibatalkan", color: "bg-red-50 text-red-600 border-red-200" },
-};
+const BULAN = [
+  "Januari","Februari","Maret","April","Mei","Juni",
+  "Juli","Agustus","September","Oktober","November","Desember"
+];
 
-function StatusBadge({ status }) {
-  const cfg = STATUS_MAP[status] ?? { label: status, color: "bg-stone-100 text-stone-600 border-stone-200" };
+function SelectField({ value, onChange, children, className = "" }) {
   return (
-    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest border ${cfg.color}`}>
-      {cfg.label}
-    </span>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className={`appearance-none bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl pl-4 pr-9 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer ${className}`}
+      >
+        {children}
+      </select>
+      <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  );
+}
+
+function MonthYearPicker({ label, month, year, onMonthChange, onYearChange }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {label && <span className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500">{label}</span>}
+      <div className="flex items-center gap-2">
+        <SelectField value={month} onChange={onMonthChange} className="min-w-[140px]">
+          {BULAN.map((b, i) => <option key={i + 1} value={i + 1}>{b}</option>)}
+        </SelectField>
+        <input
+          type="number"
+          min="2020"
+          max="2099"
+          value={year}
+          onChange={e => onYearChange(Number(e.target.value))}
+          className="bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl px-4 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all w-24 text-center"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -54,6 +85,96 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(30);
 
+  const now = new Date();
+  const [exportMode, setExportMode] = useState("single");
+  const [exportFromMonth, setExportFromMonth] = useState(now.getMonth() + 1);
+  const [exportFromYear, setExportFromYear] = useState(now.getFullYear());
+  const [exportToMonth, setExportToMonth] = useState(now.getMonth() + 1);
+  const [exportToYear, setExportToYear] = useState(now.getFullYear());
+  const [previewRows, setPreviewRows] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewFetched, setPreviewFetched] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const resetPreview = () => { setPreviewFetched(false); setPreviewRows([]); };
+
+  const exportPeriodLabel = () => {
+    if (exportMode === "single") return `${BULAN[exportFromMonth - 1]} ${exportFromYear}`;
+    const sameYear = exportFromYear === exportToYear;
+    return sameYear
+      ? `${BULAN[exportFromMonth - 1]}–${BULAN[exportToMonth - 1]} ${exportFromYear}`
+      : `${BULAN[exportFromMonth - 1]} ${exportFromYear}–${BULAN[exportToMonth - 1]} ${exportToYear}`;
+  };
+
+  const exportFilename = () => {
+    if (exportMode === "single")
+      return `penjualan_${BULAN[exportFromMonth - 1].toLowerCase()}_${exportFromYear}.xlsx`;
+    const sameYear = exportFromYear === exportToYear;
+    return sameYear
+      ? `penjualan_${BULAN[exportFromMonth-1].toLowerCase()}-${BULAN[exportToMonth-1].toLowerCase()}_${exportFromYear}.xlsx`
+      : `penjualan_${BULAN[exportFromMonth-1].toLowerCase()}${exportFromYear}-${BULAN[exportToMonth-1].toLowerCase()}${exportToYear}.xlsx`;
+  };
+
+  const getExportParams = () => {
+    const toMonth = exportMode === "single" ? exportFromMonth : exportToMonth;
+    const toYear  = exportMode === "single" ? exportFromYear  : exportToYear;
+    return { from_month: exportFromMonth, from_year: exportFromYear, to_month: toMonth, to_year: toYear };
+  };
+
+  const handleFetchPreview = async () => {
+    setPreviewLoading(true);
+    setPreviewFetched(false);
+    setPreviewRows([]);
+    try {
+      const res = await api.get("/admin/orders/export", { params: getExportParams() });
+      const rows = res.data.data ?? [];
+      setPreviewRows(rows);
+      setPreviewFetched(true);
+      if (rows.length === 0) {
+        Swal.fire({
+          title: "Tidak Ada Data",
+          text: `Tidak ada data penjualan untuk periode ${exportPeriodLabel()}.`,
+          icon: "info",
+          confirmButtonColor: "#e61e25",
+          confirmButtonText: "Oke",
+        });
+      }
+    } catch {
+      Swal.fire({ title: "Gagal", text: "Gagal memuat data. Coba lagi.", icon: "error", confirmButtonColor: "#e61e25" });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    if (previewRows.length === 0) {
+      Swal.fire({
+        title: "Tidak Ada Data",
+        text: `Belum ada data untuk diekspor. Klik "Lihat Data" terlebih dahulu.`,
+        icon: "info",
+        confirmButtonColor: "#e61e25",
+        confirmButtonText: "Oke",
+      });
+      return;
+    }
+    setExporting(true);
+    try {
+      const ws = XLSX.utils.json_to_sheet(previewRows);
+      const colWidths = Object.keys(previewRows[0]).map(key => ({
+        wch: Math.max(key.length, ...previewRows.map(r => String(r[key] ?? "").length)) + 2,
+      }));
+      ws["!cols"] = colWidths;
+      const wb = XLSX.utils.book_new();
+      const sheetName = `Penjualan ${exportPeriodLabel()}`.slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, exportFilename());
+    } catch {
+      Swal.fire({ title: "Gagal", text: "Gagal membuat file Excel. Coba lagi.", icon: "error", confirmButtonColor: "#e61e25" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   useEffect(() => {
     api
       .get("/admin/dashboard")
@@ -64,8 +185,7 @@ export default function Dashboard() {
 
   const transactions = stats?.recent_orders ?? [];
 
-  // Hitung data chart dari recent_orders, dikelompokkan per hari
-  const { chartPoints, xLabels, yTicks, totalInRange } = useMemo(() => {
+  const { chartData, totalInRange } = useMemo(() => {
     const days = getLastNDays(chartDays);
     const counts = Object.fromEntries(days.map((d) => [d, 0]));
 
@@ -74,21 +194,15 @@ export default function Dashboard() {
       if (date in counts) counts[date]++;
     });
 
-    const values = days.map((d) => counts[d]);
-    const maxVal = Math.max(...values, 1);
-    const chartPoints = buildPolylinePoints(values);
+    const step = Math.max(1, Math.floor(days.length / 7));
+    const chartData = days.map((iso, i) => ({
+      label: i % step === 0 || i === days.length - 1 ? formatAxisLabel(iso) : "",
+      fullLabel: formatAxisLabel(iso),
+      pesanan: counts[iso],
+    }));
 
-    // Pilih ~7 label sumbu X yang merata
-    const step = Math.max(1, Math.floor(days.length / 6));
-    const xLabels = days
-      .map((d, i) => ({ label: formatAxisLabel(d), i, x: chartPoints[i]?.x ?? 0 }))
-      .filter((_, i) => i % step === 0 || i === days.length - 1);
-
-    // Sumbu Y: 0, setengah, max (dibulatkan)
-    const yTicks = [maxVal, Math.round(maxVal / 2), 0];
-    const totalInRange = values.reduce((s, v) => s + v, 0);
-
-    return { chartPoints, xLabels, yTicks, totalInRange };
+    const totalInRange = chartData.reduce((s, d) => s + d.pesanan, 0);
+    return { chartData, totalInRange };
   }, [transactions, chartDays]);
 
   return (
@@ -96,7 +210,7 @@ export default function Dashboard() {
       <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
       {/* ── Top Navbar ── */}
-      <div className="bg-white border-b border-stone-200 px-8 py-5 sticky top-0 z-40 shadow-sm">
+      <div className="bg-white border-b border-stone-200 px-4 md:px-8 py-5 sticky top-16 z-30 shadow-sm">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-[#e61e25] text-white flex items-center justify-center shadow-md">
@@ -124,8 +238,8 @@ export default function Dashboard() {
 
         {/* ── Metric Cards ── */}
         <section>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {loading ? Array.from({ length: 4 }).map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {loading ? Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm border border-stone-100 flex flex-col gap-6">
                 <div className="flex justify-between items-start">
                   <Sk className="h-4 w-24 rounded-full" />
@@ -154,15 +268,6 @@ export default function Dashboard() {
                 iconColor: "text-stone-600"
               },
               {
-                label: "Stok Menipis",
-                icon: "warning",
-                value: stats?.low_stock_count ?? "-",
-                desc: "Produk perlu direstok segera",
-                critical: (stats?.low_stock_count ?? 0) > 0,
-                color: "text-stone-900 bg-stone-100",
-                iconColor: "text-[#e61e25]"
-              },
-              {
                 label: "Estimasi Pendapatan",
                 icon: "account_balance_wallet",
                 value: stats?.total_revenue ? "Rp " + Number(stats.total_revenue).toLocaleString("id-ID") : "-",
@@ -174,7 +279,7 @@ export default function Dashboard() {
             ].map((m, idx) => (
               <div
                 key={idx}
-                className={`p-8 rounded-[2rem] shadow-sm border flex flex-col justify-between group hover:-translate-y-1 hover:shadow-md transition-all duration-300 ${
+                className={`p-5 md:p-8 rounded-[2rem] shadow-sm border flex flex-col justify-between group hover:-translate-y-1 hover:shadow-md transition-all duration-300 ${
                   m.accent ? "bg-stone-900 border-stone-800" : m.critical ? "bg-red-50 border-red-100" : "bg-white border-stone-100"
                 }`}
               >
@@ -231,89 +336,54 @@ export default function Dashboard() {
             </div>
 
             {loading ? (
-              <div className="h-72 mt-6 flex flex-col gap-4">
-                <div className="flex gap-4 h-full">
-                  <div className="flex flex-col justify-between py-2 w-8 shrink-0">
-                    <Sk className="h-3 w-8 rounded" />
-                    <Sk className="h-3 w-6 rounded" />
-                    <Sk className="h-3 w-4 rounded" />
-                  </div>
-                  <Sk className="flex-1 rounded-2xl" />
+              <div className="h-72 mt-6 flex gap-4">
+                <div className="flex flex-col justify-between py-2 w-8 shrink-0">
+                  <Sk className="h-3 w-8 rounded" />
+                  <Sk className="h-3 w-6 rounded" />
+                  <Sk className="h-3 w-4 rounded" />
                 </div>
+                <Sk className="flex-1 rounded-2xl" />
               </div>
             ) : (
-              <div className="h-72 w-full relative mt-6">
-                {/* Y-axis labels + grid lines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
-                  {yTicks.map((val, i) => (
-                    <div key={i} className="flex items-center w-full">
-                      <span className="text-[10px] font-extrabold text-stone-400 w-8 text-right mr-4 shrink-0">
-                        {val}
-                      </span>
-                      <div
-                        className={`flex-1 border-t ${
-                          i === yTicks.length - 1
-                            ? "border-stone-200 border-solid"
-                            : "border-stone-100 border-dashed"
-                        }`}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* SVG Chart */}
-                <svg
-                  className="absolute inset-0 w-full h-full"
-                  viewBox="0 0 100 90"
-                  preserveAspectRatio="none"
-                  style={{ paddingBottom: "32px", paddingLeft: "48px", paddingRight: "4px" }}
-                >
-                  <defs>
-                    <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#e61e25" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#e61e25" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Area fill */}
-                  {chartPoints.length > 0 && (
-                    <polygon
-                      points={[
-                        ...chartPoints.map((p) => `${p.x},${p.y}`),
-                        `${chartPoints[chartPoints.length - 1].x},90`,
-                        `${chartPoints[0].x},90`,
-                      ].join(" ")}
-                      fill="url(#chartGradient)"
+              <div className="h-72 mt-6 -mx-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#e61e25" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="#e61e25" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="4 4" stroke="#f5f5f4" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fontWeight: 700, fill: "#a8a29e", fontFamily: "Manrope, sans-serif" }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={8}
                     />
-                  )}
-
-                  {/* Line */}
-                  {chartPoints.length > 1 && (
-                    <polyline
-                      points={chartPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-                      fill="none"
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: "#a8a29e", fontFamily: "Manrope, sans-serif" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={28}
+                    />
+                    <Tooltip
+                      content={<ChartTooltip />}
+                      cursor={{ stroke: "#e61e25", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pesanan"
                       stroke="#e61e25"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="drop-shadow-sm"
+                      strokeWidth={2.5}
+                      fill="url(#areaGradient)"
+                      dot={false}
+                      activeDot={{ r: 5, fill: "#e61e25", stroke: "#fff", strokeWidth: 2 }}
                     />
-                  )}
-
-                  {/* Dots (only for days with orders) */}
-                  {chartPoints
-                    .filter((p) => p.v > 0)
-                    .map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r="2" fill="#fff" stroke="#e61e25" strokeWidth="1" />
-                    ))}
-                </svg>
-
-                {/* X-axis labels */}
-                <div className="absolute bottom-0 left-12 right-1 flex justify-between text-[9px] font-extrabold uppercase tracking-widest text-stone-400">
-                  {xLabels.map(({ label, i }) => (
-                    <span key={i}>{label}</span>
-                  ))}
-                </div>
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             )}
           </div>
@@ -321,7 +391,7 @@ export default function Dashboard() {
 
         {/* ── Transaksi Terbaru ── */}
         <section>
-          <div className="bg-white rounded-[2rem] shadow-sm border border-stone-100 p-8 flex flex-col gap-2">
+          <div className="bg-white rounded-[2rem] shadow-sm border border-stone-100 p-4 md:p-8 flex flex-col gap-2">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black tracking-tight text-stone-900 flex items-center gap-2">
                 <span className="material-symbols-outlined text-stone-400">history</span>
@@ -363,9 +433,8 @@ export default function Dashboard() {
                     <tr>
                       <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400">Pelanggan</th>
                       <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400">Produk</th>
-                      <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400 text-center">Qty</th>
+                      <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400 text-center">Qty (Yard)</th>
                       <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400 text-right">Total Tagihan</th>
-                      <th className="py-4 font-extrabold text-[10px] uppercase tracking-widest text-stone-400 text-center pl-8">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-50">
@@ -378,18 +447,172 @@ export default function Dashboard() {
                           {t.product_name}
                         </td>
                         <td className="py-5 text-center font-bold text-stone-700">
-                          {t.qty_roll} roll
+                          {t.qty_yard != null && Number(t.qty_yard) > 0 ? `${Number(t.qty_yard).toLocaleString("id-ID")} yard` : "-"}
                         </td>
                         <td className="py-5 text-right font-black text-stone-900">
                           {t.total_amount != null ? "Rp " + Number(t.total_amount).toLocaleString("id-ID") : "-"}
-                        </td>
-                        <td className="py-5 pl-8 text-center">
-                          <StatusBadge status={t.status} />
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── Ekspor Data Penjualan ── */}
+        <section>
+          <div className="bg-white rounded-[2rem] shadow-sm border border-stone-100 p-8 md:p-10">
+
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <h3 className="text-xl font-black tracking-tight text-stone-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-600">table_chart</span>
+                  Ekspor Data Penjualan
+                </h3>
+                <p className="text-sm font-semibold text-stone-400 mt-1">
+                  Unduh rekap transaksi dalam format Excel (.xlsx)
+                </p>
+              </div>
+              {/* Mode Toggle */}
+              <div className="flex bg-stone-50 p-1.5 rounded-xl border border-stone-200 self-start sm:self-auto">
+                {[{ key: "single", label: "1 Bulan" }, { key: "range", label: "Range Bulan" }].map(m => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => { setExportMode(m.key); resetPreview(); }}
+                    className={`px-4 py-2 text-[11px] font-extrabold uppercase tracking-widest rounded-lg transition-all ${
+                      exportMode === m.key ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-700"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Fields */}
+            <div className="flex flex-wrap items-end gap-5 pb-8 border-b border-stone-100">
+              {exportMode === "single" ? (
+                <>
+                  <MonthYearPicker label="Bulan" month={exportFromMonth} year={exportFromYear}
+                    onMonthChange={v => { setExportFromMonth(v); resetPreview(); }}
+                    onYearChange={v => { setExportFromYear(v); resetPreview(); }}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-stone-400 pb-4">Dari</span>
+                    <MonthYearPicker label="" month={exportFromMonth} year={exportFromYear}
+                      onMonthChange={v => { setExportFromMonth(v); resetPreview(); }}
+                      onYearChange={v => { setExportFromYear(v); resetPreview(); }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-stone-400 pb-4">Sampai</span>
+                    <MonthYearPicker label="" month={exportToMonth} year={exportToYear}
+                      onMonthChange={v => { setExportToMonth(v); resetPreview(); }}
+                      onYearChange={v => { setExportToYear(v); resetPreview(); }}
+                    />
+                  </div>
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={handleFetchPreview}
+                disabled={previewLoading}
+                className="inline-flex items-center gap-2 bg-stone-900 hover:bg-stone-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-extrabold text-[12px] uppercase tracking-widest px-6 py-4 rounded-2xl transition-all"
+              >
+                {previewLoading
+                  ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                  : <span className="material-symbols-outlined text-[18px]">search</span>}
+                {previewLoading ? "Memuat..." : "Lihat Data"}
+              </button>
+            </div>
+
+            {/* Preview Area */}
+            {previewLoading && (
+              <div className="mt-8 flex flex-col gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex gap-4 px-2">
+                    <Sk className="h-4 w-24 rounded-lg" />
+                    <Sk className="h-4 w-32 rounded-lg" />
+                    <Sk className="h-4 flex-1 rounded-lg" />
+                    <Sk className="h-4 w-20 rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {previewFetched && !previewLoading && previewRows.length > 0 && (
+              <div className="mt-8">
+                {/* Summary bar */}
+                <div className="flex flex-wrap items-center gap-6 mb-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
+                    <span className="font-extrabold text-stone-900">{previewRows.length} baris data</span>
+                    <span className="text-stone-400 font-medium">— {exportPeriodLabel()}</span>
+                  </div>
+                  <div className="ml-auto">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-stone-400">
+                      Total: Rp {previewRows.reduce((s, r) => s + Number(r["Harga Total"] ?? 0), 0).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="border border-stone-200 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-stone-50 border-b border-stone-200 sticky top-0">
+                        <tr>
+                          {Object.keys(previewRows[0]).map(col => (
+                            <th key={col} className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-3 whitespace-nowrap">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {previewRows.slice(0, 50).map((row, idx) => (
+                          <tr key={idx} className="hover:bg-stone-50 transition-colors">
+                            {Object.values(row).map((val, ci) => (
+                              <td key={ci} className="px-4 py-3 text-stone-700 font-medium whitespace-nowrap">
+                                {ci === 9 /* Harga Total */
+                                  ? "Rp " + Number(val ?? 0).toLocaleString("id-ID")
+                                  : String(val ?? "-")}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {previewRows.length > 50 && (
+                    <div className="px-5 py-3 bg-stone-50 border-t border-stone-200 text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                      ... dan {previewRows.length - 50} baris lainnya (semua akan diekspor)
+                    </div>
+                  )}
+                </div>
+
+                {/* Export button */}
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="inline-flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-extrabold text-[12px] uppercase tracking-widest px-7 py-4 rounded-2xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    {exporting
+                      ? <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                      : <span className="material-symbols-outlined text-[20px]">download</span>}
+                    {exporting ? "Mengekspor..." : "Ekspor Excel (.xlsx)"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

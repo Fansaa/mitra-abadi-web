@@ -94,7 +94,7 @@ export default function DetailKategori() {
       <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
       {/* ── Top Navbar / Breadcrumb ── */}
-      <div className="bg-white border-b border-stone-200 px-8 py-5 sticky top-0 z-40 shadow-sm">
+      <div className="bg-white border-b border-stone-200 px-4 md:px-8 py-5 sticky top-16 z-30 shadow-sm">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button

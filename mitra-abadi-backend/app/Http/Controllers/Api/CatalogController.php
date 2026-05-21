@@ -18,8 +18,6 @@ class CatalogController extends Controller
         $badge = null;
         if ($stockTotal > 0 && $stockTotal <= $threshold) {
             $badge = 'Low Stock';
-        } elseif ($product->created_at && $product->created_at->diffInDays(now()) <= 30) {
-            $badge = 'New Arrival';
         }
 
         $imagePaths = $variants
@@ -27,6 +25,14 @@ class CatalogController extends Controller
             ->pluck('image_path')
             ->values()
             ->toArray();
+
+        $variantList = $variants->map(fn($v) => [
+            'id'         => $v->id,
+            'color_name' => $v->color_name,
+            'color_hex'  => $v->color_hex,
+            'image_path' => $v->image_path,
+            'stock_roll' => $v->inventory?->stock_roll ?? 0,
+        ])->values();
 
         return [
             'id'              => $product->id,
@@ -44,13 +50,7 @@ class CatalogController extends Controller
             'dominant_colors' => $variants->pluck('color_hex')->filter()->values()->toArray(),
             'img'             => $imagePaths[0] ?? null,
             'thumbnails'      => $imagePaths,
-            'variants'        => $variants->map(fn($v) => [
-                'id'         => $v->id,
-                'color_name' => $v->color_name,
-                'color_hex'  => $v->color_hex,
-                'image_path' => $v->image_path,
-                'stock_roll' => $v->inventory?->stock_roll ?? 0,
-            ])->values(),
+            'variants'        => $variantList,
         ];
     }
 
@@ -61,10 +61,13 @@ class CatalogController extends Controller
             ->when($request->category_id, fn($q) => $q->where('category_id', $request->category_id))
             ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data'   => $products->map(fn($p) => $this->formatProduct($p))->values(),
-        ]);
+        $data = $products->map(function ($p) {
+            $formatted = $this->formatProduct($p);
+            unset($formatted['variants'], $formatted['thumbnails'], $formatted['description']);
+            return $formatted;
+        })->values();
+
+        return response()->json(['status' => 'success', 'data' => $data]);
     }
 
     public function show($id)

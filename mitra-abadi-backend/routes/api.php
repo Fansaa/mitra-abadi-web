@@ -37,7 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('/categories', ApiCategoryController::class);
         Route::apiResource('/products', ApiProductController::class);
         Route::apiResource('/inventories', ApiInventoryController::class)->only(['index', 'show', 'update']);
-        Route::apiResource('/orders', ApiOrderController::class)->only(['index', 'store']);
+        Route::get('/orders/export', [ApiOrderController::class, 'export']);
+        Route::apiResource('/orders', ApiOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
         Route::get('/orders/{orderId}/invoice', [ApiDocumentController::class, 'invoice']);
         Route::get('/orders/{orderId}/packing-list', [ApiDocumentController::class, 'packingList']);
     });

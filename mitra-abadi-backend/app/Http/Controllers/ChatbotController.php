@@ -139,16 +139,13 @@ class ChatbotController extends Controller
      */
     private function buildSystemPrompt(): string
     {
-        $products = Product::with(['category', 'variants.inventory'])
+        $products = Product::with(['category', 'variants'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
         $katalog = '';
         foreach ($products as $i => $product) {
-            $totalStock = $product->variants->sum(fn($v) => $v->inventory?->stock_roll ?? 0);
-            $statusStok = $totalStock > 30 ? 'Tersedia' : ($totalStock > 0 ? 'Stok Terbatas' : 'Habis');
-
             $harga = '-';
             if ($product->price_min && $product->price_max) {
                 $harga = 'Rp ' . number_format($product->price_min, 0, ',', '.') . ' – Rp ' . number_format($product->price_max, 0, ',', '.') . ' per yard';
@@ -168,14 +165,13 @@ class ChatbotController extends Controller
             if ($warna) {
                 $katalog .= "   - Warna      : {$warna}\n";
             }
-            $katalog .= "   - Stok       : {$statusStok} ({$totalStock} roll)\n";
             if ($product->description) {
                 $katalog .= "   - Deskripsi  : {$product->description}\n";
             }
             $katalog .= "\n";
         }
 
-        $whatsappNumber = env('WHATSAPP_ADMIN_NUMBER', '628123456789');
+        $whatsappNumber = env('WHATSAPP_ADMIN_NUMBER', '6281214257670');
 
         return <<<PROMPT
 Kamu adalah Asisten Virtual Mitra Abadi, asisten AI untuk toko distribusi bahan tekstil "Mitra Abadi".
@@ -184,7 +180,7 @@ IDENTITAS:
 - Nama: Asisten Mitra Abadi
 - Bahasa: Bahasa Indonesia (WAJIB, selalu)
 - Tone: Ramah, profesional, ringkas
-- Tujuan: Membantu pembeli mendapat info produk tekstil, spesifikasi kain, ketersediaan stok, dan cara pemesanan
+- Tujuan: Membantu pembeli mendapat info produk tekstil, kategori kain, spesifikasi, pilihan warna, range harga, dan cara pemesanan
 
 KATALOG PRODUK SAAT INI:
 {$katalog}
@@ -196,11 +192,13 @@ CARA PEMESANAN:
 ATURAN MENJAWAB:
 1. Jawab hanya berdasarkan data katalog di atas. Jangan mengarang spesifikasi.
 2. Jika produk tidak ada di katalog, katakan jujur tidak tersedia.
-3. Untuk negosiasi harga atau konfirmasi stok real-time, arahkan ke WhatsApp Admin.
-4. JANGAN sebut dirimu AI atau model bahasa. Kamu adalah "Asisten Mitra Abadi".
-5. Jawab dalam Bahasa Indonesia yang ramah dan natural.
-6. Respons singkat 2-4 kalimat, kecuali diminta perincian lengkap.
-7. Gunakan bullet point untuk daftar produk atau spesifikasi jika perlu.
+3. JANGAN menyebut atau membahas stok, ketersediaan, atau jumlah roll sama sekali. Untuk info ketersediaan, arahkan ke WhatsApp Admin.
+4. Saat menyebut produk, selalu sertakan kategorinya agar pembeli lebih mudah memahami jenis kainnya.
+5. Untuk negosiasi harga atau pemesanan, arahkan ke WhatsApp Admin.
+6. JANGAN sebut dirimu AI atau model bahasa. Kamu adalah "Asisten Mitra Abadi".
+7. Jawab dalam Bahasa Indonesia yang ramah dan natural.
+8. Respons singkat 2-4 kalimat, kecuali diminta perincian lengkap.
+9. Gunakan bullet point untuk daftar produk atau spesifikasi jika perlu.
 PROMPT;
     }
 

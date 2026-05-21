@@ -9,7 +9,9 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_variant_id',
+        'warna',
         'qty_roll',
+        'qty_yard',
         'qty_meter',
         'price_per_meter',
         'subtotal',

@@ -20,6 +20,7 @@ import ManajemenKategori from "./pages/admin/ManajemenKategori";
 import ManualOrderEntry from "./pages/admin/ManualOrderEntry";
 import SpecimenEntry from "./pages/admin/SpesimenEntry";
 import RiwayatTransaksi from "./pages/admin/RiwayatTransaksi";
+import EditOrder from "./pages/admin/EditOrder";
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="manual-order-entry" element={<ManualOrderEntry />} />
             <Route path="specimen-entry" element={<SpecimenEntry />} />
             <Route path="riwayat-transaksi" element={<RiwayatTransaksi />} />
+            <Route path="riwayat-transaksi/:id/edit" element={<EditOrder />} />
           </Route>
         </Route>
       </Routes>

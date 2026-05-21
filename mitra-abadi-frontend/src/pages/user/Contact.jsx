@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ChatWindow from "../../components/ChatWindow";
+import NavUser from "../../components/NavUser";
 import logo from "../../assets/logo.png";
 
 export default function Contact() {
@@ -12,7 +13,7 @@ export default function Contact() {
   };
 
   // Data Dummy untuk WhatsApp CTA
-  const waNumber = "6281234567890";
+  const waNumber = import.meta.env.VITE_WHATSAPP_ADMIN_NUMBER;
   const waMessage = encodeURIComponent("Halo Pak Andy, saya ingin bertanya mengenai produk kain dari Mitra Abadi.");
   const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
@@ -22,32 +23,10 @@ export default function Contact() {
       <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
       {/* ── NAV ── */}
-      <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-stone-200/50 shadow-sm transition-all duration-300">
-        <div className="flex justify-between items-center px-8 py-4 max-w-screen-2xl mx-auto">
-          <div className="flex items-center gap-12">
-            <a href="/" className="hover:opacity-80 transition-opacity">
-              <img src={logo} alt="Mitra Abadi" className="h-10 w-auto object-contain" />
-            </a>
-            <div className="hidden md:flex gap-8 items-center">
-              {[
-                { label: "Tentang", href: "/" },
-                { label: "Katalog", href: "/catalog" },
-                { label: "Kontak", href: "/contact", active: true },
-              ].map((item) => (
-                <a key={item.label} href={item.href} className={`text-[15px] font-bold tracking-wide transition-all duration-200 relative ${item.active ? "text-[#e61e25]" : "text-stone-500 hover:text-stone-900"}`}>
-                  {item.label}
-                  {item.active && (
-                    <span className="absolute -bottom-5 left-0 w-full h-[3px] bg-[#e61e25] rounded-t-full"></span>
-                  )}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <NavUser activePage="/contact" />
 
       {/* ── MAIN ── */}
-      <main className="pt-32 pb-20 px-6 md:px-8 max-w-[1400px] mx-auto min-h-screen">
+      <main className="pt-28 md:pt-32 pb-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen">
 
         {/* ── HEADER (Pink-Cream Theme) ── */}
         <header className="mb-12 bg-gradient-to-br from-[#FFF5F2] to-[#FFF0EC] px-8 py-12 md:px-12 md:py-16 rounded-[3rem] border border-[#FCE5E1] shadow-sm relative overflow-hidden">
@@ -165,7 +144,7 @@ export default function Contact() {
 
       {/* ── FAB POPUP ── */}
       {fabState === "popup" && (
-        <div className="fixed bottom-28 right-8 z-50 w-[320px] bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-300">
+        <div className="fixed bottom-28 right-4 md:right-8 z-50 w-[calc(100vw-2rem)] max-w-[320px] bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-300">
           <div className="px-6 py-5 border-b border-stone-100 bg-gradient-to-b from-stone-50/50 to-transparent">
             <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500 font-extrabold">Pusat Bantuan</p>
             <p className="text-sm font-medium text-stone-600 mt-1">Pilih metode komunikasi:</p>

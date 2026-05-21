@@ -9,7 +9,7 @@ function getImageUrl(imagePath) {
 }
 
 function FabricCard({ fabric }) {
-  const imageUrl = getImageUrl(fabric.variants?.[0]?.image_path);
+  const imageUrl = getImageUrl(fabric.img);
 
   return (
     <Link to={`/catalog/${fabric.id}`} className="group flex flex-col cursor-pointer">
@@ -20,6 +20,7 @@ function FabricCard({ fabric }) {
               src={imageUrl}
               alt={fabric.name}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
               onError={(e) => { e.currentTarget.style.display = "none"; }}
             />
           ) : (

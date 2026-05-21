@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import Sk from "../../components/Skeleton";
+import Swal from "sweetalert2";
 
 // --- Helpers ---
 
@@ -20,24 +21,6 @@ function formatDate(dateStr) {
     month: "long",
     year: "numeric",
   });
-}
-
-const STATUS_MAP = {
-  pending: { label: "Menunggu", color: "bg-amber-50 text-amber-600 border-amber-200" },
-  processing: { label: "Diproses", color: "bg-blue-50 text-blue-600 border-blue-200" },
-  completed: { label: "Selesai", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-  cancelled: { label: "Dibatalkan", color: "bg-red-50 text-red-600 border-red-200" },
-};
-
-function StatusBadge({ status }) {
-  const cfg = STATUS_MAP[status] ?? { label: status, color: "bg-stone-100 text-stone-600 border-stone-200" };
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest border ${cfg.color}`}
-    >
-      {cfg.label}
-    </span>
-  );
 }
 
 function formatProductSummary(items) {
@@ -123,16 +106,10 @@ function DetailModal({ order, onClose }) {
         {/* Modal Body */}
         <div className="overflow-y-auto flex-1 p-8 space-y-8 bg-stone-50/30">
           
-          {/* Status & Date */}
-          <div className="flex flex-wrap gap-4 items-center bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
-            <StatusBadge status={order.status} />
-            <div className="w-px h-6 bg-stone-200"></div>
-            <div className="flex items-center gap-2 text-stone-500">
-              <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-              <span className="font-semibold text-sm">
-                {formatDate(order.created_at)}
-              </span>
-            </div>
+          {/* Date */}
+          <div className="flex items-center gap-2 text-stone-600 bg-white p-5 rounded-2xl border border-stone-100 shadow-sm w-fit">
+            <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+            <span className="font-semibold text-sm">{formatDate(order.created_at)}</span>
           </div>
 
           {/* Customer Info */}
@@ -174,7 +151,7 @@ function DetailModal({ order, onClose }) {
                     <tr>
                       <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-6 py-4">Produk</th>
                       <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4">Warna</th>
-                      <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 text-center">Qty (Roll)</th>
+                      <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-4 py-4 text-center">Qty (Yard)</th>
                       <th className="font-extrabold text-[10px] uppercase tracking-widest text-stone-400 px-6 py-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
@@ -185,12 +162,24 @@ function DetailModal({ order, onClose }) {
                           {item.product_name ?? item.name ?? "-"}
                         </td>
                         <td className="px-4 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-xs font-semibold text-stone-600">
-                            {item.color_name ?? item.color ?? "-"}
+                          <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-xs font-semibold text-stone-600">
+                            {item.color_hex && (
+                              <span
+                                className="w-3 h-3 rounded-full border border-stone-300 shrink-0"
+                                style={{ backgroundColor: item.color_hex }}
+                              />
+                            )}
+                            {item.warna
+                              ? item.warna
+                              : item.color_name && item.color_name !== "-"
+                              ? item.color_name
+                              : (item.color_hex ?? "-")}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center font-bold text-stone-700">
-                          {item.qty_roll ?? "-"}
+                          {item.qty_yard != null && Number(item.qty_yard) > 0
+                            ? Number(item.qty_yard).toLocaleString("id-ID", { maximumFractionDigits: 2 })
+                            : "-"}
                         </td>
                         <td className="px-6 py-4 text-right font-black text-stone-900">
                           {item.subtotal != null ? formatIDR(item.subtotal) : "-"}
@@ -285,7 +274,6 @@ export default function RiwayatTransaksi() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [tanggalDari, setTanggalDari] = useState("");
   const [tanggalSampai, setTanggalSampai] = useState("");
 
@@ -294,6 +282,34 @@ export default function RiwayatTransaksi() {
 
   // Download state: { id, type } or null
   const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDelete = async (order) => {
+    const result = await Swal.fire({
+      title: "Hapus Pesanan?",
+      html: `Pesanan <strong>${order.order_code}</strong> atas nama <strong>${order.customer_name}</strong> akan dihapus permanen.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e61e25",
+      cancelButtonColor: "#78716c",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await api.delete(`/admin/orders/${order.id}`);
+      setOrders(prev => prev.filter(o => o.id !== order.id));
+      await Swal.fire({
+        title: "Berhasil Dihapus",
+        text: `Pesanan ${order.order_code} telah dihapus.`,
+        icon: "success",
+        confirmButtonColor: "#e61e25",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch {
+      Swal.fire({ title: "Gagal", text: "Gagal menghapus pesanan.", icon: "error", confirmButtonColor: "#e61e25" });
+    }
+  };
 
   const handleDownload = async (order, type) => {
     const key = `${order.id}-${type}`;
@@ -332,9 +348,6 @@ export default function RiwayatTransaksi() {
         if (!matchName && !matchCode) return false;
       }
 
-      // Status filter
-      if (statusFilter !== "all" && order.status !== statusFilter) return false;
-
       // Date range filter
       if (tanggalDari) {
         const orderDate = new Date(order.created_at);
@@ -351,17 +364,15 @@ export default function RiwayatTransaksi() {
 
       return true;
     });
-  }, [orders, search, statusFilter, tanggalDari, tanggalSampai]);
+  }, [orders, search, tanggalDari, tanggalSampai]);
 
   const handleClearFilters = () => {
     setSearch("");
-    setStatusFilter("all");
     setTanggalDari("");
     setTanggalSampai("");
   };
 
-  const hasActiveFilters =
-    search.trim() || statusFilter !== "all" || tanggalDari || tanggalSampai;
+  const hasActiveFilters = search.trim() || tanggalDari || tanggalSampai;
 
   return (
     <>
@@ -369,7 +380,7 @@ export default function RiwayatTransaksi() {
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
         {/* Top Navbar / Breadcrumb */}
-        <div className="bg-white border-b border-stone-200 px-8 py-5 sticky top-0 z-30 shadow-sm">
+        <div className="bg-white border-b border-stone-200 px-4 md:px-8 py-5 sticky top-16 z-30 shadow-sm">
           <div className="max-w-[1400px] mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -401,7 +412,7 @@ export default function RiwayatTransaksi() {
           {/* Filter Bar Card */}
           <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-stone-100 mb-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
+
               {/* Search */}
               <div className="lg:col-span-2">
                 <label className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-2.5 block">
@@ -425,31 +436,6 @@ export default function RiwayatTransaksi() {
                   )}
                 </div>
               </div>
-
-              {/* Status Filter */}
-              <div>
-                <label className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-2.5 block">
-                  Status
-                </label>
-                <div className="relative group">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full appearance-none bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl pl-5 pr-12 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer"
-                  >
-                    <option value="all">Semua Status</option>
-                    <option value="pending">Menunggu</option>
-                    <option value="processing">Diproses</option>
-                    <option value="completed">Selesai</option>
-                    <option value="cancelled">Dibatalkan</option>
-                  </select>
-                  <svg className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-focus-within:text-[#e61e25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="hidden lg:block"></div>
 
               {/* Date From */}
               <div>
@@ -502,8 +488,7 @@ export default function RiwayatTransaksi() {
               <div className="col-span-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Pelanggan</div>
               <div className="col-span-2 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest">Tanggal</div>
               <div className="col-span-2 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest text-right">Tagihan</div>
-              <div className="col-span-1 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest text-center">Status</div>
-              <div className="col-span-2 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest text-right">Aksi</div>
+              <div className="col-span-3 text-[10px] font-extrabold text-stone-400 uppercase tracking-widest text-right">Aksi</div>
             </div>
 
             {/* Loading */}
@@ -579,13 +564,8 @@ export default function RiwayatTransaksi() {
                       {formatIDR(order.total_amount)}
                     </div>
 
-                    {/* Status */}
-                    <div className="col-span-1 text-center hidden lg:block">
-                      <StatusBadge status={order.status} />
-                    </div>
-
                     {/* Actions */}
-                    <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="col-span-1 lg:col-span-3 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleDownload(order, "invoice")}
                         disabled={downloadingId === `${order.id}-invoice`}
@@ -612,10 +592,24 @@ export default function RiwayatTransaksi() {
                       </button>
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-[#e61e25] hover:text-white hover:bg-[#e61e25] transition-colors border border-red-100 hover:border-[#e61e25]"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-stone-50 text-stone-500 hover:text-white hover:bg-stone-900 transition-colors border border-stone-200 hover:border-stone-900"
                         title="Lihat Detail"
                       >
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
+                      </button>
+                      <button
+                        onClick={() => navigate(`/admin/riwayat-transaksi/${order.id}/edit`)}
+                        title="Edit Pesanan"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:text-white hover:bg-blue-600 transition-colors border border-blue-100 hover:border-blue-600"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(order)}
+                        title="Hapus Pesanan"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-[#e61e25] hover:text-white hover:bg-[#e61e25] transition-colors border border-red-100 hover:border-[#e61e25]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
                     </div>
                   </div>
