@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import Sk from "../../components/Skeleton";
@@ -39,31 +39,88 @@ const BULAN = [
   "Juli","Agustus","September","Oktober","November","Desember"
 ];
 
-function SelectField({ value, onChange, children, className = "" }) {
+function SelectField({ value, onChange, options, className = "" }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={e => onChange(Number(e.target.value))}
-        className={`appearance-none bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl pl-4 pr-9 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer ${className}`}
+    <div ref={dropdownRef} className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl px-4 py-4 focus:outline-none hover:border-stone-300 transition-all cursor-pointer shadow-sm"
       >
-        {children}
-      </select>
-      <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-      </svg>
+        <span>{selectedOption ? selectedOption.label : "Pilih..."}</span>
+        <div className={`text-stone-400 transition-transform duration-300 ${open ? "rotate-180 text-[#e61e25]" : ""}`}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 mt-2 py-2 bg-white border border-stone-100 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] z-50 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm font-bold transition-colors ${
+                  isSelected
+                    ? "text-[#e61e25] bg-red-50/50"
+                    : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {isSelected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                  )}
+                  {opt.label}
+                </span>
+                {isSelected && (
+                  <svg className="w-4 h-4 text-[#e61e25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 function MonthYearPicker({ label, month, year, onMonthChange, onYearChange }) {
+  const monthOptions = BULAN.map((b, i) => ({ value: i + 1, label: b }));
+
   return (
     <div className="flex flex-col gap-2">
       {label && <span className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500">{label}</span>}
       <div className="flex items-center gap-2">
-        <SelectField value={month} onChange={onMonthChange} className="min-w-[140px]">
-          {BULAN.map((b, i) => <option key={i + 1} value={i + 1}>{b}</option>)}
-        </SelectField>
+        <SelectField
+          value={month}
+          onChange={onMonthChange}
+          options={monthOptions}
+          className="min-w-[140px]"
+        />
         <input
           type="number"
           min="2020"

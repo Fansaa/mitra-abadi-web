@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import Sk from "../../components/Skeleton";
@@ -21,6 +21,18 @@ export default function Inventory() {
   // Filter state
   const [filterSearch, setFilterSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const catDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchProducts = () => {
     Promise.all([
@@ -142,20 +154,84 @@ export default function Inventory() {
           </div>
 
           {/* Category Dropdown */}
-          <div className="relative w-full md:w-72 group flex-shrink-0">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full appearance-none bg-white border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl pl-5 pr-12 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer shadow-sm truncate"
+          <div ref={catDropdownRef} className="relative w-full md:w-72 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+              className={`w-full flex items-center justify-between bg-white border text-stone-800 text-sm font-bold rounded-2xl px-5 py-4 focus:outline-none transition-all cursor-pointer shadow-sm ${
+                categoryDropdownOpen
+                  ? "border-[#e61e25] ring-4 ring-[#e61e25]/10"
+                  : "border-stone-200 hover:border-stone-300"
+              }`}
             >
-              <option value="all">Semua Kategori</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <svg className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-focus-within:text-[#e61e25] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-            </svg>
+              <span className={filterCategory !== "all" ? "text-stone-800 font-bold" : "text-stone-400 font-medium"}>
+                {filterCategory === "all" ? "Semua Kategori" : categories.find((c) => String(c.id) === String(filterCategory))?.name || "Semua Kategori"}
+              </span>
+              <div className={`text-stone-400 transition-transform duration-300 ${categoryDropdownOpen ? "rotate-180 text-[#e61e25]" : ""}`}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+
+            {categoryDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-2 py-2 bg-white border border-stone-100 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] z-50 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setCategoryDropdownOpen(false);
+                  }}
+                  className={`w-full px-5 py-3.5 flex items-center justify-between text-left text-sm font-bold transition-colors ${
+                    filterCategory === "all"
+                      ? "text-[#e61e25] bg-red-50/50"
+                      : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {filterCategory === "all" && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                    )}
+                    Semua Kategori
+                  </span>
+                  {filterCategory === "all" && (
+                    <svg className="w-4 h-4 text-[#e61e25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </button>
+                {categories.map((c) => {
+                  const isSelected = String(c.id) === String(filterCategory);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setFilterCategory(c.id);
+                        setCategoryDropdownOpen(false);
+                      }}
+                      className={`w-full px-5 py-3.5 flex items-center justify-between text-left text-sm font-bold transition-colors ${
+                        isSelected
+                          ? "text-[#e61e25] bg-red-50/50"
+                          : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                        )}
+                        {c.name}
+                      </span>
+                      {isSelected && (
+                        <svg className="w-4 h-4 text-[#e61e25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Reset Button */}
