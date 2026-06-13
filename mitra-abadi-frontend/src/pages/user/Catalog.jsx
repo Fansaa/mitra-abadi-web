@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import FabricCard from "../../components/FabricCard";
 import ChatWindow from "../../components/ChatWindow";
@@ -16,6 +16,18 @@ export default function Catalog() {
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const catDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -198,28 +210,92 @@ export default function Catalog() {
                   Kategori
                 </h3>
                 
-                <div className="relative w-full group">
-                  <select
-                    value={activeCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="w-full appearance-none pl-4 pr-10 py-3.5 bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-xl shadow-sm focus:outline-none focus:border-[#e61e25] focus:ring-2 focus:ring-[#e61e25]/20 transition-all cursor-pointer"
+                <div ref={catDropdownRef} className="relative w-full">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                    className={`w-full flex items-center justify-between pl-4 pr-10 py-3.5 bg-white border text-stone-800 text-sm font-bold rounded-xl shadow-sm hover:border-[#e61e25] focus:outline-none focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer ${
+                      categoryDropdownOpen ? "border-[#e61e25] ring-4 ring-[#e61e25]/10" : "border-stone-200"
+                    }`}
                   >
-                    <option value="All">Semua Kategori ({products.length})</option>
-                    {categories.map((cat) => {
-                      const count = products.filter((p) => p.category?.name === cat.name).length;
-                      return (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {/* Custom Dropdown Arrow */}
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-focus-within:text-[#e61e25] transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                    <span>
+                      {activeCategory === "All"
+                        ? `Semua Kategori (${products.length})`
+                        : `${activeCategory} (${products.filter((p) => p.category?.name === activeCategory).length})`}
+                    </span>
+                    <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition-transform duration-300 ${categoryDropdownOpen ? "rotate-180 text-[#e61e25]" : ""}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {categoryDropdownOpen && (
+                    <div className="absolute left-0 right-0 mt-2 py-2 bg-white border border-stone-100 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] z-30 max-h-60 overflow-y-auto backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Option "All" */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCategoryChange("All");
+                          setCategoryDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm font-bold transition-all ${
+                          activeCategory === "All"
+                            ? "text-[#e61e25] bg-red-50/50"
+                            : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {activeCategory === "All" && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                          )}
+                          Semua Kategori
+                        </span>
+                        <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
+                          activeCategory === "All"
+                            ? "bg-red-100/70 text-[#e61e25]"
+                            : "bg-stone-100 text-stone-500"
+                        }`}>
+                          {products.length}
+                        </span>
+                      </button>
+
+                      {/* Categories */}
+                      {categories.map((cat) => {
+                        const count = products.filter((p) => p.category?.name === cat.name).length;
+                        const isSelected = activeCategory === cat.name;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              handleCategoryChange(cat.name);
+                              setCategoryDropdownOpen(false);
+                            }}
+                            className={`w-full px-4 py-3 flex items-center justify-between text-left text-sm font-bold transition-all ${
+                              isSelected
+                                ? "text-[#e61e25] bg-red-50/50"
+                                : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                              )}
+                              {cat.name}
+                            </span>
+                            <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
+                              isSelected
+                                ? "bg-red-100/70 text-[#e61e25]"
+                                : "bg-stone-100 text-stone-500"
+                            }`}>
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </section>
 

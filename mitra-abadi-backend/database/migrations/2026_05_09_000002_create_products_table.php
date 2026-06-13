@@ -15,6 +15,9 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('composition')->nullable();
+            $table->integer('gsm')->nullable();
+            $table->decimal('width_cm', 8, 2)->nullable();
+            $table->decimal('meter_per_roll', 8, 2)->nullable();
             $table->decimal('yard_per_roll', 8, 2)->default(1);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

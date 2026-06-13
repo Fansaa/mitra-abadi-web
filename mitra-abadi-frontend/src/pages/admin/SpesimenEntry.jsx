@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import Swal from "sweetalert2";
@@ -18,6 +18,18 @@ export default function SpecimenEntry() {
   });
   const [variant, setVariant] = useState({ color_hex: "#4a4a4a", image: null });
   const [imagePreview, setImagePreview] = useState(null);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const catDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     api.get("/admin/categories").then((res) => setCategories(res.data.data)).catch(console.error);
@@ -158,26 +170,63 @@ export default function SpecimenEntry() {
                       className="w-full bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl px-5 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all placeholder:text-stone-400 placeholder:font-medium"
                     />
                   </div>
-                  <div>
+                  <div ref={catDropdownRef} className="relative">
                     <label className="text-[11px] font-extrabold uppercase tracking-widest text-stone-500 mb-2.5 block">
                       Kategori <span className="text-[#e61e25]">*</span>
                     </label>
-                    <div className="relative group">
-                      <select
-                        value={form.category_id}
-                        onChange={(e) => handleChange("category_id", e.target.value)}
-                        required
-                        className="w-full appearance-none bg-stone-50 border border-stone-200 text-stone-800 text-sm font-bold rounded-2xl pl-5 pr-12 py-4 focus:outline-none focus:border-[#e61e25] focus:ring-4 focus:ring-[#e61e25]/10 transition-all cursor-pointer"
-                      >
-                        <option value="" disabled>Pilih Kategori Kriteria</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                      <svg className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-focus-within:text-[#e61e25] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                      className={`w-full flex items-center justify-between bg-stone-50 border text-stone-800 text-sm font-bold rounded-2xl px-5 py-4 focus:outline-none transition-all cursor-pointer ${
+                        categoryDropdownOpen
+                          ? "border-[#e61e25] ring-4 ring-[#e61e25]/10"
+                          : "border-stone-200 hover:border-stone-300"
+                      }`}
+                    >
+                      <span className={form.category_id ? "text-stone-800" : "text-stone-400"}>
+                        {categories.find((c) => String(c.id) === String(form.category_id))?.name || "Pilih Kategori Kriteria"}
+                      </span>
+                      <div className={`text-stone-400 transition-transform duration-300 ${categoryDropdownOpen ? "rotate-180 text-[#e61e25]" : ""}`}>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {categoryDropdownOpen && (
+                      <div className="absolute left-0 right-0 mt-2 py-2 bg-white border border-stone-100 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.08)] z-50 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                        {categories.map((c) => {
+                          const isSelected = String(c.id) === String(form.category_id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => {
+                                handleChange("category_id", c.id);
+                                setCategoryDropdownOpen(false);
+                              }}
+                              className={`w-full px-5 py-3.5 flex items-center justify-between text-left text-sm font-bold transition-colors ${
+                                isSelected
+                                  ? "text-[#e61e25] bg-red-50/50"
+                                  : "text-stone-700 hover:text-[#e61e25] hover:bg-stone-50/80"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                {isSelected && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#e61e25]"></span>
+                                )}
+                                {c.name}
+                              </span>
+                              {isSelected && (
+                                <svg className="w-4 h-4 text-[#e61e25]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 

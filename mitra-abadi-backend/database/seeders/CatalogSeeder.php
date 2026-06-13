@@ -25,27 +25,28 @@ class CatalogSeeder extends Seeder
                         'name' => 'Katun Toyobo Premium',
                         'description' => 'Katun jepang original, serat rapat, tidak menerawang dan sangat adem.',
                         'sku_code' => 'SKU-KTN-001',
+                        'price_min' => 38000,
+                        'price_max' => 45000,
                         'gsm' => 130,
                         'width_cm' => 150,
                         'meter_per_roll' => 40,
                         'yard_per_roll' => 43.7,
                         'variants' => [
                             ['color_name' => 'Maroon', 'color_hex' => '#800000', 'pattern' => 'Solid'],
-                            ['color_name' => 'Navy Blue', 'color_hex' => '#000080', 'pattern' => 'Solid'],
-                            ['color_name' => 'Olive Green', 'color_hex' => '#808000', 'pattern' => 'Solid'],
                         ]
                     ],
                     [
                         'name' => 'Katun Madinah',
                         'description' => 'Kain katun jatuh dengan tekstur serat yang unik, sangat cocok untuk gamis.',
                         'sku_code' => 'SKU-KTN-002',
+                        'price_min' => 32000,
+                        'price_max' => 40000,
                         'gsm' => 145,
                         'width_cm' => 150,
                         'meter_per_roll' => 50,
                         'yard_per_roll' => 54.6,
                         'variants' => [
                             ['color_name' => 'Dusty Pink', 'color_hex' => '#DCAE96', 'pattern' => 'Heather'],
-                            ['color_name' => 'Misty Grey', 'color_hex' => '#B0B5B9', 'pattern' => 'Heather'],
                         ]
                     ]
                 ]
@@ -58,26 +59,28 @@ class CatalogSeeder extends Seeder
                         'name' => 'Rayon Twill',
                         'description' => 'Rayon dengan anyaman serat twill (miring) sehingga lebih tebal dan awet.',
                         'sku_code' => 'SKU-RYN-001',
+                        'price_min' => 28000,
+                        'price_max' => 35000,
                         'gsm' => 150,
                         'width_cm' => 150,
                         'meter_per_roll' => 60,
                         'yard_per_roll' => 65.6,
                         'variants' => [
                             ['color_name' => 'Black', 'color_hex' => '#000000', 'pattern' => 'Solid'],
-                            ['color_name' => 'Mustard', 'color_hex' => '#FFDB58', 'pattern' => 'Solid'],
                         ]
                     ],
                     [
                         'name' => 'Rayon Viscose Motif',
                         'description' => 'Rayon viscose motif floral elegan, kualitas export.',
                         'sku_code' => 'SKU-RYN-002',
+                        'price_min' => 35000,
+                        'price_max' => 42000,
                         'gsm' => 120,
                         'width_cm' => 150,
                         'meter_per_roll' => 50,
                         'yard_per_roll' => 54.6,
                         'variants' => [
                             ['color_name' => 'Floral Blue', 'color_hex' => '#4682B4', 'pattern' => 'Floral'],
-                            ['color_name' => 'Abstract Red', 'color_hex' => '#DC143C', 'pattern' => 'Abstract'],
                         ]
                     ]
                 ]
@@ -90,14 +93,14 @@ class CatalogSeeder extends Seeder
                         'name' => 'Linen Rami',
                         'description' => 'Linen dengan serat rami, kuat, tahan lama dan semakin lembut jika sering dicuci.',
                         'sku_code' => 'SKU-LNN-001',
+                        'price_min' => 45000,
+                        'price_max' => 55000,
                         'gsm' => 160,
                         'width_cm' => 145,
                         'meter_per_roll' => 45,
                         'yard_per_roll' => 49.2,
                         'variants' => [
                             ['color_name' => 'Broken White', 'color_hex' => '#F2F0E6', 'pattern' => 'Solid'],
-                            ['color_name' => 'Khaki', 'color_hex' => '#C3B091', 'pattern' => 'Solid'],
-                            ['color_name' => 'Terracotta', 'color_hex' => '#E2725B', 'pattern' => 'Solid'],
                         ]
                     ]
                 ]
@@ -117,6 +120,8 @@ class CatalogSeeder extends Seeder
                 $product = Product::create([
                     'category_id' => $category->id,
                     'name' => $prodData['name'],
+                    'price_min' => $prodData['price_min'] ?? 0,
+                    'price_max' => $prodData['price_max'] ?? 0,
                     'slug' => Str::slug($prodData['name']),
                     'description' => $prodData['description'],
                     'sku_code' => $prodData['sku_code'],

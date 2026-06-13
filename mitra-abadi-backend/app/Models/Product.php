@@ -17,6 +17,9 @@ class Product extends Model
         'slug',
         'description',
         'sku_code',
+        'gsm',
+        'width_cm',
+        'meter_per_roll',
         'yard_per_roll',
         'is_active',
     ];
