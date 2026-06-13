@@ -22,18 +22,15 @@ function ChatWindow({ onClose }) {
       setLoading(true);
   
       try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
+        const res = await fetch("/api/chatbot/message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            system: "You are a helpful Digital Curator for Mitra Abadi, a premium textile archive. You help customers find specific fabric weaves, check stock availability, explain technical textile specifications (GSM, width, composition, finish), and recommend fabrics based on their needs. Be concise, professional, and knowledgeable about textiles. Available fabrics: Cotton Combed 30s (180 GSM, 72\", $12.50, Core Stock), Vintage Washed Linen (210 GSM, 58\", $24.00, Premium Archive), Tech-Jersey Sport (240 GSM, 60\", $18.25, High-Stretch), Mulberry Silk Satin (85 GSM, 44\", $45.00), Raw Selvedge Denim (14.5 OZ, 32\", $21.80, Low Stock), Eco-Jersey Organic (160 GSM, 68\", $15.40).",
-            messages: newMessages.map((m) => ({ role: m.role, content: m.text })),
+            message: userMsg,
           }),
         });
         const data = await res.json();
-        const reply = data.content?.[0]?.text || "I'm sorry, I couldn't process that request.";
+        const reply = data.reply || "I'm sorry, I couldn't process that request.";
         setMessages((prev) => [
           ...prev,
           { role: "assistant", text: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },

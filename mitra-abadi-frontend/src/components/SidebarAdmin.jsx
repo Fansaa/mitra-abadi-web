@@ -22,7 +22,7 @@ export default function SidebarAdmin({ isOpen, onClose }) {
       )}
 
       <nav
-        className={`fixed left-0 top-0 h-full w-64 bg-surface-container-low flex flex-col py-8 px-4 z-50 transition-transform duration-300 ease-in-out
+        className={`fixed left-0 top-16 h-[calc(100%-4rem)] w-64 bg-surface-container-low flex flex-col py-8 px-4 z-50 transition-transform duration-300 ease-in-out overflow-y-auto
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         {/* Brand */}

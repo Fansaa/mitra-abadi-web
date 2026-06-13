@@ -46,3 +46,6 @@ docs/superpowers/
 
 # ---- Design mockups & internal docs (bukan source code) ----
 mitra-abadi-backend/Dokumen/stitch_remix_of_katalog_sim_kain/
+
+# Deployment archives
+*.zip

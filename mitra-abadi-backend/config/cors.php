@@ -6,6 +6,8 @@ return [
     'allowed_origins' => [
         'http://localhost:5173',
         env('FRONTEND_URL', 'http://localhost:5173'),
+        'http://' . parse_url(env('FRONTEND_URL', 'http://localhost:5173'), PHP_URL_HOST),
+        'https://' . parse_url(env('FRONTEND_URL', 'http://localhost:5173'), PHP_URL_HOST),
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
